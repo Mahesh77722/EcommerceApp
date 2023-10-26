@@ -1,0 +1,72 @@
+﻿var dataTable;
+
+$(document).ready(function () {
+    loadDataTable();
+});
+
+function loadDataTable() {
+    dataTable = $('#tblData').DataTable({
+        "ajax": { url: '/admin/user/getall' },
+        "columns": [
+            { data: 'name', "width": "20%" },
+            { data: 'phoneNumber', "width": "15%" },
+            { data: 'company.name', "width": "15%" },
+            { data: 'role', "width": "20%" },
+            {
+                data: { id: 'id', lockoutEnd: 'lockoutEnd' },
+                "render": function (data) {
+                    var today = new Date().getTime();
+                    var lockout = new Date(data.lockoutEnd).getTime();
+                    if (today < lockout) {
+                        return `<div class="text-center">
+                                    <a onclick=LockUnlock('${data.id}','Unlock') class="btn btn-success text-white" style="cursor:pointer; width:100px">
+                                        <i class="bi bi-unlock-fill"></i> Unlock
+                                    </a>
+                                    <a href="/admin/user/RoleManagement?userId=${data.id}" class="btn btn-danger text-white" style="cursor:pointer; width:150px">
+                                        <i class="bi bi-pencil-square"></i> Permission
+                                    </a>
+                                </div>`
+                    } else {
+                        return `<div class="text-center">
+                                    <a onclick=LockUnlock('${data.id}','Lock')  class="btn btn-danger text-white" style="cursor:pointer; width:100px">
+                                        <i class="bi bi-lock-fill"></i> Lock
+                                    </a>
+                                    <a href="/admin/user/RoleManagement?userId=${data.id}" class="btn btn-danger text-white" style="cursor:pointer; width:150px">
+                                        <i class="bi bi-pencil-square"></i> Permission
+                                    </a>
+                                </div>`
+                    }
+                },
+                "width": "30%"
+            }
+        ]
+    });
+}
+
+function LockUnlock(id,type) {
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "You want to "+type,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.ajax({
+                type: "POST",
+                url: "/Admin/User/LockUnlock",                
+                data: JSON.stringify(id),
+                contentType:"application/json",
+                success: function (data) {
+                    dataTable.ajax.reload();
+                    toastr.success(data.message);
+                },
+                error: function (data) {
+                    toastr.error(data.message);
+                }
+            })
+        }
+    })
+}
